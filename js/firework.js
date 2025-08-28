@@ -25,7 +25,7 @@ var S = {
       S.UI.simulate(decodeURI(action).substring(i + 3));
     } else {
       // 七夕浪漫祝福语
-      S.UI.simulate('|#countdown 5||七夕快乐|亲爱的宝宝|我爱你|星光洒满|只为你心跳❤️|漫天烟花|只为你绽放|浪漫不止七夕|而是有你|#heart|');
+      S.UI.simulate('|#countdown 5||七夕快乐|亲爱的宝宝|我爱你|星光洒满|只为你心跳❤️|漫天烟花|只为你绽放|"七"待是你|"夕"望是你|往后余生|万般皆是你|#heart|');
     }
 
     S.Drawing.loop(function () {
