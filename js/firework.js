@@ -227,7 +227,7 @@ S.UI = (function () {
             window.createFloatingHearts();
           }
       }
-    },5000, sequence.length);
+    },8000, sequence.length);
   }
 
   function checkInputWidth(e) {
