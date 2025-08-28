@@ -1,0 +1,688 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>七夕浪漫3D烟花动画特效 - 爱的告白</title>
+
+<style>
+html,body{
+	margin:0px;
+	width:100%;
+	height:100%;
+	overflow:hidden;
+	background:#000;
+	font-family: 'Microsoft YaHei', Arial, sans-serif;
+}
+/* 七夕主题样式 */
+/* 主爱心样式 */
+.main-heart {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 10000;
+	opacity: 0;
+	scale: 0;
+	filter: drop-shadow(0 0 15px rgba(255, 51, 102, 0.8));
+	transition: transform 0.3s ease;
+}
+
+/* 爱心粒子样式 */
+.love-heart {
+	position: fixed;
+	z-index: 9999;
+	opacity: 0;
+	scale: 0;
+}
+
+/* 主爱心动画 */
+@keyframes heartBeatMain {
+	0% {
+		opacity: 0;
+		scale: 0;
+		transform: translate(-50%, -50%) rotate(0deg);
+	}
+	20% {
+		opacity: 0.9;
+		scale: 1.1;
+		transform: translate(-50%, -50%) rotate(5deg);
+	}
+	40% {
+		opacity: 0.8;
+		scale: 0.95;
+		transform: translate(-50%, -50%) rotate(-3deg);
+	}
+	60% {
+		opacity: 0.9;
+		scale: 1.05;
+		transform: translate(-50%, -50%) rotate(2deg);
+	}
+	80% {
+		opacity: 0.8;
+		scale: 0.98;
+		transform: translate(-50%, -50%) rotate(-1deg);
+	}
+	100% {
+		opacity: 0.9;
+		scale: 1;
+		transform: translate(-50%, -50%) rotate(0deg);
+	}
+}
+
+/* 爱心粒子动画 - 七夕主题 */
+@keyframes heartFloat {
+	0% {
+		opacity: 0;
+		scale: 0;
+		transform: translate(-50%, -50%) rotate(0deg);
+	}
+	20% {
+		opacity: 0.9;
+		scale: 1.1;
+		transform: translate(calc(-50% + var(--moveX, 0px)), calc(-50% + var(--moveY, -50px))) rotate(45deg);
+	}
+	50% {
+		opacity: 0.8;
+		scale: 1;
+	}
+	80% {
+		opacity: 0.6;
+	}
+	100% {
+		opacity: 0;
+		scale: 0.5;
+		transform: translate(calc(-50% + var(--moveX, 0px) * 1.5), calc(-50% + var(--moveY, -100px) * 1.5)) rotate(360deg);
+	}
+}
+
+/* 爱心渐变填充 */
+.heart-gradient {
+	fill: url(#heartGradient);
+}
+
+.heart-gradient-alt {
+	fill: url(#heartGradient2);
+}
+
+/* 闪烁效果 */
+@keyframes twinkle {
+	0%, 100% { opacity: 0.8; }
+	50% { opacity: 1; filter: drop-shadow(0 0 20px rgba(255, 51, 102, 1)); }
+}
+
+/* 爱心路径渐变 */
+.heart-gradient {
+	fill: url(#heartGradient);
+}
+
+/* 页面加载动画 */
+.loading-screen {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: #000;
+	z-index: 11000;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	color: #fff;
+	font-size: 24px;
+	transition: opacity 1s ease;
+}
+.loading-screen.fade-out {
+	opacity: 0;
+	pointer-events: none;
+}</style>
+
+</head>
+<body>
+<!-- 加载屏幕 -->
+<div class="loading-screen" id="loadingScreen">
+	<span>正在准备浪漫惊喜...</span>
+</div>
+
+<!-- SVG渐变定义 -->
+<svg width="0" height="0" style="position:absolute;">
+	<defs>
+		<linearGradient id="heartGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+			<stop offset="0%" stop-color="#ff3366"/>
+			<stop offset="50%" stop-color="#ff6699"/>
+			<stop offset="100%" stop-color="#ff99cc"/>
+		</linearGradient>
+		<linearGradient id="heartGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+			<stop offset="0%" stop-color="#ff66b2"/>
+			<stop offset="50%" stop-color="#ff3399"/>
+			<stop offset="100%" stop-color="#cc0066"/>
+		</linearGradient>
+	</defs>
+</svg>
+
+<!-- 主爱心动画 -->
+<svg id="mainHeart" class="main-heart" viewBox="0 0 100 100" width="200" height="200">
+	<path d="M50 30 C60 15, 85 15, 85 40 C85 60, 50 85, 50 85 C50 85, 15 60, 15 40 C15 15, 40 15, 50 30 Z" class="heart-gradient"/>
+</svg>
+
+<audio id="a1" loop="loop">
+	<source src="LoveStory.mp3">
+	<source src="MyLove.mp3">
+</audio>
+<canvas id="canvas" style="position:absolute;width:100%;height:100%;z-index:8888"></canvas>
+<canvas style="position:absolute;width:100%;height:100%;z-index:9999" class="canvas"></canvas>
+<div class="overlay">
+  <div class="tabs">
+    <div class="tabs-labels"><span class="tabs-label">浪漫七夕</span><span class="tabs-label">爱的告白</span><span class="tabs-label">分享甜蜜</span></div>
+
+    <div class="tabs-panels">
+      <ul class="tabs-panel commands">
+      </ul>
+    </div>
+  </div>
+</div>
+<script>
+window.onload=function () {
+	// 显示加载屏幕2秒后淡出
+	setTimeout(function(){
+		const loadingScreen = document.getElementById('loadingScreen');
+		loadingScreen.classList.add('fade-out');
+	}, 2000);
+
+	// 音频播放逻辑
+	let oA=document.querySelector("#a1");
+	let timer=null;
+	function autoPlay() {
+		if (oA.paused) {
+			oA.paused=false;
+			oA.volume=0.5;
+			oA.play().catch(function(error) {
+				console.log('音频自动播放失败，等待用户交互...', error);
+				// 添加用户交互监听
+				document.addEventListener('click', function userInteractionHandler() {
+					oA.play();
+					document.removeEventListener('click', userInteractionHandler);
+				});
+			});
+		}else {
+			clearInterval(timer);
+		}
+	}
+	timer=setInterval(autoPlay,1);
+
+	// 创建随机位置的爱心粒子
+	function createHeartParticles() {
+		const particleCount = 20;
+		for(let i=0; i<particleCount; i++) {
+			const heart = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+			heart.setAttribute("class", "love-heart");
+			heart.setAttribute("viewBox", "0 0 100 100");
+			heart.setAttribute("width", Math.random()*30+10);
+			heart.setAttribute("height", Math.random()*30+10);
+			heart.style.left = Math.random()*100 + "%";
+			heart.style.top = Math.random()*100 + "%";
+			heart.style.animationDelay = Math.random()*5 + "s";
+			heart.style.animationDuration = Math.random()*3 + 2 + "s";
+			
+			const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+			path.setAttribute("d", "M50 30 C60 15, 85 15, 85 40 C85 60, 50 85, 50 85 C50 85, 15 60, 15 40 C15 15, 40 15, 50 30 Z");
+			// 随机粉色系
+			const hue = Math.floor(Math.random()*20) + 340; // 粉色到红色范围
+			const lightness = Math.floor(Math.random()*20) + 65; // 亮度
+			path.setAttribute("fill", `hsl(${hue}, 100%, ${lightness}%)`);
+			
+			heart.appendChild(path);
+			document.body.appendChild(heart);
+		}
+	}
+	
+	// 延迟创建爱心粒子
+	setTimeout(createHeartParticles, 3000);
+	
+	// 设置主爱心动画
+	const mainHeart = document.getElementById('mainHeart');
+	setTimeout(() => {
+		mainHeart.style.animation = 'heartBeatMain 2s ease-out forwards, twinkle 3s ease-in-out infinite 2s';
+	}, 1000);
+	
+	// 屏幕任意位置点击触发爱心爆发
+	document.addEventListener('click', (e) => {
+		// 获取点击位置
+		const x = e.clientX;
+		const y = e.clientY;
+		
+		// 创建爆发的爱心粒子
+		createHeartBurst(30, x, y);
+	});
+	
+	// 主爱心交互效果 - 保留颜色变化和弹跳动画
+	mainHeart.addEventListener('click', () => {
+		// 改变主爱心颜色
+		const path = mainHeart.querySelector('path');
+		path.classList.toggle('heart-gradient');
+		path.classList.toggle('heart-gradient-alt');
+		if (path.classList.contains('heart-gradient-alt')) {
+			path.setAttribute('fill', 'url(#heartGradient2)');
+		} else {
+			path.setAttribute('fill', 'url(#heartGradient)');
+		}
+		// 添加弹跳动画
+		mainHeart.style.animation = 'heartBeatMain 0.5s ease-out forwards, twinkle 3s ease-in-out infinite';
+		setTimeout(() => {
+			mainHeart.style.animation = 'heartBeatMain 2s ease-out forwards, twinkle 3s ease-in-out infinite 2s';
+		}, 500);
+	});
+	
+	// 创建满屏飘动的小心心效果
+	window.createFloatingHearts = function() {
+		// 持续生成小心心，直到动画结束
+		const interval = setInterval(() => {
+			// 每个间隔创建10个小心心
+			for(let i=0; i<10; i++) {
+				createFloatingHeart();
+			}
+		}, 200);
+
+		// 5秒后停止生成
+		setTimeout(() => {
+			clearInterval(interval);
+		}, 5000);
+	}
+
+	// 创建单个漂浮的小心心 - 增大版
+	function createFloatingHeart() {
+		const heart = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+		heart.setAttribute("class", "love-heart");
+		heart.setAttribute("viewBox", "0 0 100 100");
+		// 增大心形大小，从10-15px改为20-30px
+		heart.setAttribute("width", Math.random()*15+20);
+		heart.setAttribute("height", Math.random()*15+20);
+		heart.style.left = Math.random()*100 + "%";
+		heart.style.top = "120%";
+		heart.style.animationDelay = Math.random()*5 + "s";
+		heart.style.animationDuration = Math.random()*5 + 3 + "s";
+		heart.style.animationName = "heartFloat";
+		// 添加一些随机旋转，使效果更生动
+		heart.style.transform = `rotate(${Math.random()*360}deg)`;
+
+		// 设置向上漂浮的路径，增大横向移动范围
+		const moveX = (Math.random()*200 - 100) + "px";
+		const moveY = -(Math.random()*250 + 350) + "px";
+		heart.style.setProperty('--moveX', moveX);
+		heart.style.setProperty('--moveY', moveY);
+
+		// 随机粉色系，使用更鲜艳的颜色
+		const hue = Math.floor(Math.random()*30) + 330; // 粉色到红色范围
+		const lightness = Math.floor(Math.random()*20) + 60; // 亮度
+		const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+		path.setAttribute("d", "M50 30 C60 15, 85 15, 85 40 C85 60, 50 85, 50 85 C50 85, 15 60, 15 40 C15 15, 40 15, 50 30 Z");
+		path.setAttribute("fill", `hsl(${hue}, 100%, ${lightness}%)`);
+		// 增强阴影效果
+		path.setAttribute("filter", "drop-shadow(0 0 8px rgba(255, 51, 102, 0.8))");
+
+		heart.appendChild(path);
+		document.body.appendChild(heart);
+
+		// 自动移除粒子
+		setTimeout(() => {
+			heart.remove();
+		}, 10000);
+	}
+
+	// 触发主心粒子分散效果
+	window.triggerHeartExplosion = function() {
+		const mainHeart = document.getElementById('mainHeart');
+		if (!mainHeart) return;
+
+		// 获取主心位置
+		const rect = mainHeart.getBoundingClientRect();
+		const x = rect.left + rect.width / 2;
+		const y = rect.top + rect.height / 2;
+
+		// 隐藏主心
+		mainHeart.style.opacity = '0';
+
+		// 创建大量爱心粒子
+		createHeartBurst(100, x, y);
+
+		// 3秒后移除主心元素
+		setTimeout(() => {
+			if (mainHeart.parentNode) {
+				mainHeart.parentNode.removeChild(mainHeart);
+			}
+		}, 3000);
+	}
+
+	// 创建爱心爆发效果
+	function createHeartBurst(count, x = null, y = null) {
+		for(let i=0; i<count; i++) {
+			const heart = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+			heart.setAttribute("class", "love-heart");
+			heart.setAttribute("viewBox", "0 0 100 100");
+			heart.setAttribute("width", Math.random()*15+5);
+			heart.setAttribute("height", Math.random()*15+5);
+			// 如果提供了点击位置，则使用该位置，否则使用屏幕中心
+			heart.style.left = x !== null ? x + "px" : "50%";
+			heart.style.top = y !== null ? y + "px" : "50%";
+			heart.style.transform = x !== null ? "translate(-50%, -50%)" : "translate(-50%, -50%)";
+			heart.style.animationDelay = Math.random()*0.5 + "s";
+			heart.style.animationDuration = Math.random()*2 + 1 + "s";
+			heart.style.animationName = "heartFloat";
+			
+			// 设置随机方向的运动
+			const angle = Math.random() * Math.PI * 2;
+			const distance = Math.random() * 150 + 50;
+			const moveX = Math.cos(angle) * distance;
+			const moveY = Math.sin(angle) * distance;
+			heart.style.setProperty('--moveX', moveX + 'px');
+			heart.style.setProperty('--moveY', moveY + 'px');
+			
+			// 随机粉色系
+			const hue = Math.floor(Math.random()*30) + 330; // 粉色到红色范围
+			const lightness = Math.floor(Math.random()*20) + 60; // 亮度
+			const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+			path.setAttribute("d", "M50 30 C60 15, 85 15, 85 40 C85 60, 50 85, 50 85 C50 85, 15 60, 15 40 C15 15, 40 15, 50 30 Z");
+			path.setAttribute("fill", `hsl(${hue}, 100%, ${lightness}%)`);
+			path.setAttribute("filter", "drop-shadow(0 0 5px rgba(255, 51, 102, 0.8))");
+			
+			heart.appendChild(path);
+			document.body.appendChild(heart);
+			
+			// 自动移除粒子
+			setTimeout(() => {
+				heart.remove();
+			}, 3000);
+		}
+	}
+}
+function initVars(){
+
+	pi=Math.PI;
+	ctx=canvas.getContext("2d");
+	canvas.width=canvas.clientWidth;
+	canvas.height=canvas.clientHeight;
+	cx=canvas.width/2;
+	cy=canvas.height/2;
+	playerZ=-25;
+	playerX=playerY=playerVX=playerVY=playerVZ=pitch=yaw=pitchV=yawV=0;
+	scale=600;
+	seedTimer=0;seedInterval=5,seedLife=100;gravity=.02;
+	seeds=new Array();
+	sparkPics=new Array();
+	s="http://qiniu.mataojie.com/firework/";
+	for(i=1;i<=10;++i){
+		sparkPic=new Image();
+		sparkPic.src=s+"spark"+i+".png";
+		sparkPics.push(sparkPic);
+	}
+	sparks=new Array();
+	pow1=new Audio(s+"pow1.ogg");
+	pow2=new Audio(s+"pow2.ogg");
+	pow3=new Audio(s+"pow3.ogg");
+	pow4=new Audio(s+"pow4.ogg");
+	frames = 0;
+}
+
+function rasterizePoint(x,y,z){
+
+	var p,d;
+	x-=playerX;
+	y-=playerY;
+	z-=playerZ;
+	p=Math.atan2(x,z);
+	d=Math.sqrt(x*x+z*z);
+	x=Math.sin(p-yaw)*d;
+	z=Math.cos(p-yaw)*d;
+	p=Math.atan2(y,z);
+	d=Math.sqrt(y*y+z*z);
+	y=Math.sin(p-pitch)*d;
+	z=Math.cos(p-pitch)*d;
+	var rx1=-1000,ry1=1,rx2=1000,ry2=1,rx3=0,ry3=0,rx4=x,ry4=z,uc=(ry4-ry3)*(rx2-rx1)-(rx4-rx3)*(ry2-ry1);
+	if(!uc) return {x:0,y:0,d:-1};
+	var ua=((rx4-rx3)*(ry1-ry3)-(ry4-ry3)*(rx1-rx3))/uc;
+	var ub=((rx2-rx1)*(ry1-ry3)-(ry2-ry1)*(rx1-rx3))/uc;
+	if(!z)z=.000000001;
+	if(ua>0&&ua<1&&ub>0&&ub<1){
+		return {
+			x:cx+(rx1+ua*(rx2-rx1))*scale,
+			y:cy+y/z*scale,
+			d:Math.sqrt(x*x+y*y+z*z)
+		};
+	}else{
+		return {
+			x:cx+(rx1+ua*(rx2-rx1))*scale,
+			y:cy+y/z*scale,
+			d:-1
+		};
+	}
+}
+
+function spawnSeed(){
+
+	seed=new Object();
+	seed.x=-50+Math.random()*100;
+	seed.y=25;
+	seed.z=-50+Math.random()*100;
+	seed.vx=.1-Math.random()*.2;
+	seed.vy=-1.5;//*(1+Math.random()/2);
+	seed.vz=.1-Math.random()*.2;
+	seed.born=frames;
+	seeds.push(seed);
+}
+
+function splode(x,y,z){
+
+	t=5+parseInt(Math.random()*150);
+	sparkV=1+Math.random()*2.5;
+	type=parseInt(Math.random()*3);
+	switch(type){
+		case 0:
+			pic1=parseInt(Math.random()*10);
+			break;
+		case 1:
+			pic1=parseInt(Math.random()*10);
+			do{ pic2=parseInt(Math.random()*10); }while(pic2==pic1);
+			break;
+		case 2:
+			pic1=parseInt(Math.random()*10);
+			do{ pic2=parseInt(Math.random()*10); }while(pic2==pic1);
+			do{ pic3=parseInt(Math.random()*10); }while(pic3==pic1 || pic3==pic2);
+			break;
+	}
+	for(m=1;m<t;++m){
+		spark=new Object();
+		spark.x=x; spark.y=y; spark.z=z;
+		p1=pi*2*Math.random();
+		p2=pi*Math.random();
+		v=sparkV*(1+Math.random()/6)
+		spark.vx=Math.sin(p1)*Math.sin(p2)*v;
+		spark.vz=Math.cos(p1)*Math.sin(p2)*v;
+		spark.vy=Math.cos(p2)*v;
+		switch(type){
+			case 0: spark.img=sparkPics[pic1]; break;
+			case 1:
+				spark.img=sparkPics[parseInt(Math.random()*2)?pic1:pic2];
+				break;
+			case 2:
+				switch(parseInt(Math.random()*3)){
+					case 0: spark.img=sparkPics[pic1]; break;
+					case 1: spark.img=sparkPics[pic2]; break;
+					case 2: spark.img=sparkPics[pic3]; break;
+				}
+				break;
+		}
+		spark.radius=25+Math.random()*50;
+		spark.alpha=1;
+		spark.trail=new Array();
+		sparks.push(spark);
+	}
+	switch(parseInt(Math.random()*4)){
+		case 0:	pow=new Audio(s+"pow1.ogg"); break;
+		case 1:	pow=new Audio(s+"pow2.ogg"); break;
+		case 2:	pow=new Audio(s+"pow3.ogg"); break;
+		case 3:	pow=new Audio(s+"pow4.ogg"); break;
+	}
+	d=Math.sqrt((x-playerX)*(x-playerX)+(y-playerY)*(y-playerY)+(z-playerZ)*(z-playerZ));
+	pow.volume=1.5/(1+d/10);
+	pow.play();
+}
+
+function doLogic(){
+
+	if(seedTimer<frames){
+		seedTimer=frames+seedInterval*Math.random()*10;
+		spawnSeed();
+	}
+	for(i=0;i<seeds.length;++i){
+		seeds[i].vy+=gravity;
+		seeds[i].x+=seeds[i].vx;
+		seeds[i].y+=seeds[i].vy;
+		seeds[i].z+=seeds[i].vz;
+		if(frames-seeds[i].born>seedLife){
+			splode(seeds[i].x,seeds[i].y,seeds[i].z);
+			seeds.splice(i,1);
+		}
+	}
+	for(i=0;i<sparks.length;++i){
+		if(sparks[i].alpha>0 && sparks[i].radius>5){
+			sparks[i].alpha-=.01;
+			sparks[i].radius/=1.02;
+			sparks[i].vy+=gravity;
+			point=new Object();
+			point.x=sparks[i].x;
+			point.y=sparks[i].y;
+			point.z=sparks[i].z;
+			if(sparks[i].trail.length){
+				x=sparks[i].trail[sparks[i].trail.length-1].x;
+				y=sparks[i].trail[sparks[i].trail.length-1].y;
+				z=sparks[i].trail[sparks[i].trail.length-1].z;
+				d=((point.x-x)*(point.x-x)+(point.y-y)*(point.y-y)+(point.z-z)*(point.z-z));
+				if(d>9){
+					sparks[i].trail.push(point);
+				}
+			}else{
+				sparks[i].trail.push(point);
+			}
+			if(sparks[i].trail.length>5)sparks[i].trail.splice(0,1);
+			sparks[i].x+=sparks[i].vx;
+			sparks[i].y+=sparks[i].vy;
+			sparks[i].z+=sparks[i].vz;
+			sparks[i].vx/=1.075;
+			sparks[i].vy/=1.075;
+			sparks[i].vz/=1.075;
+		}else{
+			sparks.splice(i,1);
+		}
+	}
+	p=Math.atan2(playerX,playerZ);
+	d=Math.sqrt(playerX*playerX+playerZ*playerZ);
+	d+=Math.sin(frames/80)/1.25;
+	t=Math.sin(frames/200)/40;
+	playerX=Math.sin(p+t)*d;
+	playerZ=Math.cos(p+t)*d;
+	yaw=pi+p+t;
+}
+
+function rgb(col){
+
+	var r = parseInt((.5+Math.sin(col)*.5)*16);
+	var g = parseInt((.5+Math.cos(col)*.5)*16);
+	var b = parseInt((.5-Math.sin(col)*.5)*16);
+	return "#"+r.toString(16)+g.toString(16)+b.toString(16);
+}
+
+function draw(){
+
+	ctx.clearRect(0,0,cx*2,cy*2);
+
+	ctx.fillStyle="#ff8";
+	for(i=-100;i<100;i+=3){
+		for(j=-100;j<100;j+=4){
+			x=i;z=j;y=25;
+			point=rasterizePoint(x,y,z);
+			if(point.d!=-1){
+				size=250/(1+point.d);
+				d = Math.sqrt(x * x + z * z);
+				a = 0.75 - Math.pow(d / 100, 6) * 0.75;
+				if(a>0){
+					ctx.globalAlpha = a;
+					ctx.fillRect(point.x-size/2,point.y-size/2,size,size);
+				}
+			}
+		}
+	}
+	ctx.globalAlpha=1;
+	for(i=0;i<seeds.length;++i){
+		point=rasterizePoint(seeds[i].x,seeds[i].y,seeds[i].z);
+		if(point.d!=-1){
+			size=200/(1+point.d);
+			ctx.fillRect(point.x-size/2,point.y-size/2,size,size);
+		}
+	}
+	point1=new Object();
+	for(i=0;i<sparks.length;++i){
+		point=rasterizePoint(sparks[i].x,sparks[i].y,sparks[i].z);
+		if(point.d!=-1){
+			size=sparks[i].radius*200/(1+point.d);
+			if(sparks[i].alpha<0)sparks[i].alpha=0;
+			if(sparks[i].trail.length){
+				point1.x=point.x;
+				point1.y=point.y;
+				switch(sparks[i].img){
+					case sparkPics[0]:ctx.strokeStyle="#f84";break;
+					case sparkPics[1]:ctx.strokeStyle="#84f";break;
+					case sparkPics[2]:ctx.strokeStyle="#8ff";break;
+					case sparkPics[3]:ctx.strokeStyle="#fff";break;
+					case sparkPics[4]:ctx.strokeStyle="#4f8";break;
+					case sparkPics[5]:ctx.strokeStyle="#f44";break;
+					case sparkPics[6]:ctx.strokeStyle="#f84";break;
+					case sparkPics[7]:ctx.strokeStyle="#84f";break;
+					case sparkPics[8]:ctx.strokeStyle="#fff";break;
+					case sparkPics[9]:ctx.strokeStyle="#44f";break;
+				}
+				for(j=sparks[i].trail.length-1;j>=0;--j){
+					point2=rasterizePoint(sparks[i].trail[j].x,sparks[i].trail[j].y,sparks[i].trail[j].z);
+					if(point2.d!=-1){
+						ctx.globalAlpha=j/sparks[i].trail.length*sparks[i].alpha/2;
+						ctx.beginPath();
+						ctx.moveTo(point1.x,point1.y);
+						ctx.lineWidth=1+sparks[i].radius*10/(sparks[i].trail.length-j)/(1+point2.d);
+						ctx.lineTo(point2.x,point2.y);
+						ctx.stroke();
+						point1.x=point2.x;
+						point1.y=point2.y;
+					}
+				}
+			}
+			ctx.globalAlpha=sparks[i].alpha;
+			ctx.drawImage(sparks[i].img,point.x-size/2,point.y-size/2,size,size);
+		}
+	}
+}
+
+function frame(){
+
+	if(frames>100000){
+		seedTimer=0;
+		frames=0;
+	}
+	frames++;
+	draw();
+	doLogic();
+	requestAnimationFrame(frame);
+}
+
+window.addEventListener("resize",()=>{
+	canvas.width=canvas.clientWidth;
+	canvas.height=canvas.clientHeight;
+	cx=canvas.width/2;
+	cy=canvas.height/2;
+});
+
+
+initVars();
+frame();
+</script>
+<script src="js/firework.js"></script>
+
+</body>
+</html>
