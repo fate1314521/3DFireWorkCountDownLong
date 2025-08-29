@@ -191,7 +191,10 @@ S.UI = (function () {
           break;
           
         case 'heart':
-          S.Shape.switchShape(S.ShapeBuilder.heart());
+          S.Shape.switchShape(S.ShapeBuilder.heart(maxShapeSize));
+      
+      // 确保在心形显示后调用图片展示
+      setTimeout(showImages, 2000);
           break;
 
         case 'circle':
@@ -300,9 +303,13 @@ S.UI = (function () {
     //   }
     // });
 
-    canvas.addEventListener('click', function (e) {
-      overlay.classList.remove('overlay--visible');
-    });
+    // 检查overlay元素是否存在
+    var overlay = document.querySelector('.overlay');
+    if (overlay) {
+      canvas.addEventListener('click', function (e) {
+        overlay.classList.remove('overlay--visible');
+      });
+    }
   }
 
   function init() {
@@ -637,39 +644,62 @@ S.ShapeBuilder = (function () {
     },
     
     // 绘制心形图案 - 七夕主题增强版
-    heart: function () {
+    heart: function (maxShapeSize) {
       var dots = [],
           size = maxShapeSize / 2,
           width = gap * size,
           height = gap * size,
           centerX = shapeCanvas.width / 2,
           centerY = shapeCanvas.height / 2;
-          
-      // 增强版心形公式，增加更多点以获得更平滑的心形
-      var scale = Math.min(width, height) * 0.4;
       
-      // 增加点数，使心形更平滑
-      for (var i = 0; i < 360; i += 1.5) {
+      // 优化心形参数，创建更美观的心形轮廓
+      var scale = maxShapeSize * 0.4; // 增大缩放比例使心形更大
+      
+      // 使用经典心形极坐标方程，提高点密度使边缘更平滑
+      for (var i = 0; i < 360; i += 0.2) {
         var t = i * Math.PI / 180;
-        // 极坐标心形方程
+        // 经典心形方程: r = 16 * sin^3(t)
         var r = 16 * Math.pow(Math.sin(t), 3);
-        var x = centerX + r * Math.cos(t) * scale / 16;
-        var y = centerY - (13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t)) * scale / 16;
+        var x = r * Math.cos(t);
+        var y = r * Math.sin(t);
+        
+        // 调整y值，使心形更饱满
+        y = y * 1.1;
         
         dots.push(new S.Point({
-          x: x - shapeCanvas.width / 2 + width / 2,
-          y: y - shapeCanvas.height / 2 + height / 2
+          x: centerX + x * scale / 16,
+          y: centerY - y * scale / 16
         }));
       }
       
-      // 在心形周围添加一些装饰性的点
-      for (var i = 0; i < 12; i++) {
-        var angle = (i / 12) * Math.PI * 2;
-        var distance = scale * 1.4;
+      // 添加底部圆润度优化，确保心形底部不会太尖
+      for (var i = 0; i < 180; i++) {
+        var t = i * Math.PI / 180;
+        var radius = scale * 0.4; // 相应增大底部半径
+        var x = radius * Math.cos(t);
+        var y = radius * Math.sin(t) + radius;
         
         dots.push(new S.Point({
-          x: centerX - shapeCanvas.width / 2 + width / 2 + Math.cos(angle) * distance,
-          y: centerY - shapeCanvas.height / 2 + height / 2 + Math.sin(angle) * distance
+          x: centerX + x,
+          y: centerY + y
+        }));
+      }
+      
+      // 添加中心装饰点
+      dots.push(new S.Point({
+        x: centerX,
+        y: centerY - scale * 0.3 // 稍微向上移动，更符合心形中心
+      }));
+      
+      // 在心形周围添加装饰性的点，位置优化
+      var decorationCount = 8; // 保持8个点，分布更均匀
+      for (var i = 0; i < decorationCount; i++) {
+        var angle = (i / decorationCount) * Math.PI * 2;
+        var distance = scale * 1.2; // 调整距离，相对于更大的心形比例稍小
+        
+        dots.push(new S.Point({
+          x: centerX + Math.cos(angle) * distance,
+          y: centerY - Math.sin(angle) * distance
         }));
       }
       
@@ -785,5 +815,237 @@ S.Shape = (function () {
   }
 }());
 
+
+// 图片数组 - 从image文件夹加载图片
+let images = [
+    'image/loveyou1.jpg',
+    'image/loveyou2.jpg',
+    'image/loveyou3.jpg',
+    'image/love4.jpg'
+];
+
+// 添加调试信息
+console.log('图片路径数组:', images);
+
+// 检查图片是否存在
+images.forEach((src, index) => {
+    const img = new Image();
+    img.onload = () => console.log(`图片 ${index+1} 加载成功: ${src}`);
+    img.onerror = () => console.error(`图片 ${index+1} 加载失败: ${src}`);
+    img.src = src;
+});
+
+// 图片对应的描述文字
+let imageCaptions = [
+    '我们的浪漫时刻',
+    '爱的回忆',
+    '心有灵犀',
+    '璀璨烟花，只为你绽放'
+];
+
+// 当前显示的图片索引
+let currentImageIndex = 0;
+
+// 图片展示计数
+let imageDisplayCount = 0;
+
+// 图片展示总次数限制 (2遍)
+const maxImageDisplayCount = images.length * 1;
+
+// 图片自动轮播计时器
+let slideshowTimer = null;
+
+// 图片切换间隔时间(毫秒)
+const slideInterval = 5000;
+
+// 声明全局变量存储图片容器和显示图片元素
+let imageContainer, displayImage, imageCaption;
+
+// 页面加载完成后初始化图片相关元素
+function initImageGallery() {
+    console.log('初始化图片展示功能');
+    
+    // 初始化图片容器和显示元素
+    imageContainer = document.getElementById('imageContainer');
+    displayImage = document.getElementById('displayImage');
+    imageCaption = document.querySelector('.image-caption');
+
+    // 添加事件监听器，点击图片容器外的区域关闭图片展示
+    imageContainer.addEventListener('click', function(e) {
+        if (e.target === imageContainer) {
+            hideImages();
+        }
+    });
+
+    // 添加键盘导航
+    document.addEventListener('keydown', function(e) {
+        if (imageContainer.classList.contains('active')) {
+            if (e.key === 'Escape') {
+                hideImages();
+            } else if (e.key === 'ArrowRight') {
+                showNextImage();
+            } else if (e.key === 'ArrowLeft') {
+                showPrevImage();
+            }
+        }
+    });
+
+    // 添加触摸滑动支持
+    let touchStartX = 0;
+    displayImage.addEventListener('touchstart', function(e) {
+        touchStartX = e.touches[0].clientX;
+    });
+
+    displayImage.addEventListener('touchend', function(e) {
+        if (!touchStartX) return;
+        const touchEndX = e.changedTouches[0].clientX;
+        const diffX = touchEndX - touchStartX;
+
+        if (Math.abs(diffX) > 50) {
+            if (diffX > 0) {
+                showPrevImage();
+            } else {
+                showNextImage();
+            }
+        }
+        touchStartX = 0;
+    });
+}
+
+// 显示图片
+function showImages() {
+    if (!imageContainer) {
+        initImageGallery();
+    }
+
+    // 显示第一张图片
+    showSingleImage(currentImageIndex);
+
+    // 设置自动轮播
+    startSlideshow();
+
+    // 添加进入动画
+    setTimeout(() => {
+        imageContainer.classList.add('active');
+    }, 100);
+}
+
+// 显示单张图片
+function showSingleImage(index) {
+    if (index < 0 || index >= images.length) return;
+
+    currentImageIndex = index;
+
+    // 添加淡出动画类
+    imageContainer.classList.add('fade-out');
+
+    // 等待淡出动画完成后更新图片
+    setTimeout(() => {
+        // 显示加载状态
+        displayImage.src = '';
+        displayImage.alt = '加载中...';
+        imageCaption.textContent = '加载中...';
+
+        // 设置新图片源
+        displayImage.src = images[currentImageIndex];
+        displayImage.alt = imageCaptions[currentImageIndex] || '浪漫回忆';
+
+        // 图片加载完成后显示
+        displayImage.onload = function() {
+            imageCaption.textContent = imageCaptions[currentImageIndex] || '';
+            // 移除淡出类，触发淡入效果
+            imageContainer.classList.remove('fade-out');
+        };
+
+        // 图片加载错误处理
+        displayImage.onerror = function() {
+            console.error(`Failed to load image: ${images[currentImageIndex]}`);
+            // 尝试使用下一张图片
+            currentImageIndex = (currentImageIndex + 1) % images.length;
+            setTimeout(() => showSingleImage(currentImageIndex), 500);
+        };
+    }, 1500); // 等待淡出动画完成 (1.5秒)
+}
+
+// 显示下一张图片
+function showNextImage() {
+    clearInterval(slideshowTimer);
+    
+    // 增加展示计数
+    imageDisplayCount++;
+    
+    // 检查是否达到展示次数限制
+    if (imageDisplayCount >= maxImageDisplayCount) {
+        console.log('已完成两遍图片展示，即将结束');
+        hideImages();
+        return;
+    }
+    
+    currentImageIndex = (currentImageIndex + 1) % images.length;
+    showSingleImage(currentImageIndex);
+    startSlideshow();
+}
+
+// 显示上一张图片
+function showPrevImage() {
+    clearInterval(slideshowTimer);
+    currentImageIndex = (currentImageIndex - 1 + images.length) % images.length;
+    showSingleImage(currentImageIndex);
+    startSlideshow();
+}
+
+// 隐藏图片
+function hideImages() {
+    clearInterval(slideshowTimer);
+    imageContainer.classList.remove('active', 'next', 'prev');
+}
+
+// 开始自动轮播
+function startSlideshow() {
+    slideshowTimer = setInterval(showNextImage, slideInterval);
+}
+
+// 增强S.UI.performAction函数，添加文字展示完成后显示图片的逻辑
+const originalPerformAction = S.UI.performAction;
+S.UI.performAction = function(value) {
+    // 调用原始函数
+    originalPerformAction.call(this, value);
+
+    // 增强触发条件，确保能在文字展示完成后触发
+    if (value && (typeof value === 'string' || typeof value === 'object')) {
+        // 计算文字展示总时长（每个文字5秒，加上倒计时）
+        let sequenceLength = 0;
+        if (typeof value === 'string') {
+            sequenceLength = value.split('|').filter(item => item.trim() !== '').length;
+        } else if (value.text) {
+            sequenceLength = value.text.split('|').filter(item => item.trim() !== '').length;
+        }
+        
+        // 如果无法获取序列长度，默认使用一个合理值
+        if (sequenceLength === 0) {
+            sequenceLength = 5; // 假设至少有5个文字
+            console.warn('无法确定文字序列长度，使用默认值:', sequenceLength);
+        }
+        
+        const totalDuration = sequenceLength * 5000 + 3000; // 额外加3秒保险
+
+        console.log('文字展示总时长:', totalDuration, '毫秒');
+        console.log('将在', totalDuration/1000, '秒后显示图片');
+
+        // 设置定时器，在文字展示完成后显示图片
+        setTimeout(() => {
+            // 确保页面已经加载完成
+            if (typeof initImageGallery === 'function') {
+                initImageGallery();
+                // 触发烟花效果
+                if (typeof window.createHeartBurst === 'function') {
+                    window.createHeartBurst(50);
+                }
+                // 显示图片
+                showImages();
+            }
+        }, totalDuration);
+    }
+};
 
 S.init();
