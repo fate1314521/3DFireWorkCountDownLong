@@ -98,7 +98,7 @@ S.UI = (function () {
       currentAction,
       resizeTimer,
       time,
-      maxShapeSize = 30,
+      maxShapeSize = 100,  // 增大最大形状尺寸
       firstAction = true,
       sequence = [],
       cmd = '#';
@@ -258,7 +258,51 @@ S.UI = (function () {
       }
     });
 
-   
+    // input.addEventListener('input', checkInputWidth);
+    // input.addEventListener('change', checkInputWidth);
+    // input.addEventListener('focus', checkInputWidth);
+
+    // help.addEventListener('click', function (e) {
+    //   overlay.classList.toggle('overlay--visible');
+    //   overlay.classList.contains('overlay--visible') && reset(true);
+    // });
+
+    // commands.addEventListener('click', function (e) {
+    //   var el,
+    //       info,
+    //       demo,
+    //       tab,
+    //       active,
+    //       url;
+    //
+    //   if (e.target.classList.contains('commands-item')) {
+    //     el = e.target;
+    //   } else {
+    //     el = e.target.parentNode.classList.contains('commands-item') ? e.target.parentNode : e.target.parentNode.parentNode;
+    //   }
+    //
+    //   info = el && el.querySelector('.commands-item-info');
+    //   demo = el && info.getAttribute('data-demo');
+    //   url = el && info.getAttribute('data-url');
+    //
+    //   if (info) {
+    //     overlay.classList.remove('overlay--visible');
+    //
+    //     if (demo) {
+    //       input.value = demo;
+    //
+    //       if (isTouch) {
+    //         reset();
+    //         performAction(input.value);
+    //       } else {
+    //         input.focus();
+    //       }
+    //     } else if (url) {
+    //       //window.location = url;
+    //     }
+    //   }
+    // });
+
     // 检查overlay元素是否存在
     var overlay = document.querySelector('.overlay');
     if (overlay) {
@@ -472,7 +516,7 @@ S.Dot.prototype = {
 
 
 S.ShapeBuilder = (function () {
-  var gap = 13,
+  var gap = 8,  // 减小间距，使形状更密集
       shapeCanvas = document.createElement('canvas'),
       shapeContext = shapeCanvas.getContext('2d'),
       fontSize = 500,
@@ -560,9 +604,12 @@ S.ShapeBuilder = (function () {
       var r = Math.max(0, d) / 2;
       shapeContext.clearRect(0, 0, shapeCanvas.width, shapeCanvas.height);
       shapeContext.beginPath();
-      shapeContext.arc(r * gap, r * gap, r * gap, 0, 2 * Math.PI, false);
-      shapeContext.fill();
-      shapeContext.closePath();
+    // 将圆圈绘制在画布中心
+    var centerX = shapeCanvas.width / 2;
+    var centerY = shapeCanvas.height / 2;
+    shapeContext.arc(centerX, centerY, r * gap, 0, 2 * Math.PI, false);
+    shapeContext.fill();
+    shapeContext.closePath();
 
       return processCanvas();
     },
@@ -599,59 +646,74 @@ S.ShapeBuilder = (function () {
       return { dots: dots, w: width, h: height };
     },
     
-    // 绘制心形图案 - 七夕主题增强版
+    // 绘制心形图案 - 七夕主题增强版 (文字展示后)
     heart: function (maxShapeSize) {
       var dots = [],
-          size = maxShapeSize / 2,
-          width = gap * size,
-          height = gap * size,
-          centerX = shapeCanvas.width / 2,
-          centerY = shapeCanvas.height / 2;
+          // 增大心形尺寸并确保居中
+          width = gap * maxShapeSize,
+          height = gap * maxShapeSize,
+          // 将心形位置调整到右下角
+          centerX = shapeCanvas.width/ 2, // 右侧75%位置
+          centerY = shapeCanvas.height * 0.75; // 底部75%位置
       
       // 优化心形参数，创建更美观的心形轮廓
-      var scale = maxShapeSize * 0.4; // 增大缩放比例使心形更大
+      var scale = maxShapeSize * 0.7; // 调整缩放比例使心形更适中
       
-      // 使用经典心形极坐标方程，提高点密度使边缘更平滑
-      for (var i = 0; i < 360; i += 0.2) {
+      // 使用经典心形极坐标方程，确保形状自然美观
+      for (var i = 0; i < 360; i += 0.5) {
         var t = i * Math.PI / 180;
-        // 经典心形方程: r = 16 * sin^3(t)
-        var r = 16 * Math.pow(Math.sin(t), 3);
-        var x = r * Math.cos(t);
-        var y = r * Math.sin(t);
+        // 经典心形方程: x² + y² + a x = a √(x² + y²)
+        // 转换为参数方程形式
+        var x = 16 * Math.pow(Math.sin(t), 3);
+        var y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
         
-        // 调整y值，使心形更饱满
-        y = y * 1.1;
+        // 添加微小的随机变化，使心形更自然
+        var randomVariation = (Math.random() - 0.5) * 0.2;
         
         dots.push(new S.Point({
-          x: centerX + x * scale / 16,
-          y: centerY - y * scale / 16
+          x: centerX + (x + randomVariation) * scale / 16,
+          y: centerY - (y + randomVariation) * scale / 16
         }));
       }
       
-      // 添加底部圆润度优化，确保心形底部不会太尖
-      for (var i = 0; i < 180; i++) {
+      // 优化心形底部，使其更加圆润自然
+      var bottomRadius = scale * 0.3;
+      var bottomCenterY = centerY + scale * 0.5;
+      for (var i = 0; i < 180; i += 2) {
         var t = i * Math.PI / 180;
-        var radius = scale * 0.4; // 相应增大底部半径
-        var x = radius * Math.cos(t);
-        var y = radius * Math.sin(t) + radius;
+        var x = bottomRadius * Math.cos(t);
+        var y = bottomRadius * Math.sin(t);
         
         dots.push(new S.Point({
           x: centerX + x,
-          y: centerY + y
+          y: bottomCenterY + y
         }));
       }
       
       // 添加中心装饰点
       dots.push(new S.Point({
         x: centerX,
-        y: centerY - scale * 0.3 // 稍微向上移动，更符合心形中心
+        y: centerY - scale * 0.25 // 调整中心位置
       }));
       
-      // 在心形周围添加装饰性的点，位置优化
-      var decorationCount = 8; // 保持8个点，分布更均匀
+      // 在心形周围添加装饰性的点，形成渐变效果
+      var decorationCount = 12; // 增加装饰点数量
       for (var i = 0; i < decorationCount; i++) {
         var angle = (i / decorationCount) * Math.PI * 2;
-        var distance = scale * 1.2; // 调整距离，相对于更大的心形比例稍小
+        // 随机距离，创建层次感
+        var distance = scale * (1.1 + Math.random() * 0.4);
+        
+        dots.push(new S.Point({
+          x: centerX + Math.cos(angle) * distance,
+          y: centerY - Math.sin(angle) * distance
+        }));
+      }
+      
+      // 在心形内部添加一些闪光点
+      var innerSparkles = 15;
+      for (var i = 0; i < innerSparkles; i++) {
+        var angle = Math.random() * Math.PI * 2;
+        var distance = Math.random() * scale * 0.6;
         
         dots.push(new S.Point({
           x: centerX + Math.cos(angle) * distance,
