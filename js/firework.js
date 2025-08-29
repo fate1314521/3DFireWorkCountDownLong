@@ -258,51 +258,7 @@ S.UI = (function () {
       }
     });
 
-    // input.addEventListener('input', checkInputWidth);
-    // input.addEventListener('change', checkInputWidth);
-    // input.addEventListener('focus', checkInputWidth);
-
-    // help.addEventListener('click', function (e) {
-    //   overlay.classList.toggle('overlay--visible');
-    //   overlay.classList.contains('overlay--visible') && reset(true);
-    // });
-
-    // commands.addEventListener('click', function (e) {
-    //   var el,
-    //       info,
-    //       demo,
-    //       tab,
-    //       active,
-    //       url;
-    //
-    //   if (e.target.classList.contains('commands-item')) {
-    //     el = e.target;
-    //   } else {
-    //     el = e.target.parentNode.classList.contains('commands-item') ? e.target.parentNode : e.target.parentNode.parentNode;
-    //   }
-    //
-    //   info = el && el.querySelector('.commands-item-info');
-    //   demo = el && info.getAttribute('data-demo');
-    //   url = el && info.getAttribute('data-url');
-    //
-    //   if (info) {
-    //     overlay.classList.remove('overlay--visible');
-    //
-    //     if (demo) {
-    //       input.value = demo;
-    //
-    //       if (isTouch) {
-    //         reset();
-    //         performAction(input.value);
-    //       } else {
-    //         input.focus();
-    //       }
-    //     } else if (url) {
-    //       //window.location = url;
-    //     }
-    //   }
-    // });
-
+   
     // 检查overlay元素是否存在
     var overlay = document.querySelector('.overlay');
     if (overlay) {
