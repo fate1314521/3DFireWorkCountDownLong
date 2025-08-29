@@ -654,7 +654,7 @@ S.ShapeBuilder = (function () {
           height = gap * maxShapeSize,
           // 将心形位置调整到右下角
           centerX = shapeCanvas.width/ 2, // 右侧75%位置
-          centerY = shapeCanvas.height * 0.75; // 底部75%位置
+          centerY = shapeCanvas.height * 0.5; // 底部75%位置
       
       // 优化心形参数，创建更美观的心形轮廓
       var scale = maxShapeSize * 0.7; // 调整缩放比例使心形更适中
