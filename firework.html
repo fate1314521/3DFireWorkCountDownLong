@@ -684,5 +684,80 @@ frame();
 </script>
 <script src="js/firework.js"></script>
 
-</body>
+<!-- 图片展示容器 -->
+  <div id="imageContainer" class="image-container">
+    <img id="displayImage" src="" alt="浪漫回忆" />
+    <div class="image-caption"></div>
+  </div>
+
+  <style>
+    /* 图片展示样式 */
+    .image-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background-color: rgba(0, 0, 0, 0.85);
+      z-index: 9000;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.8s ease, visibility 0.8s ease;
+    }
+
+    .image-container.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    #displayImage {
+      max-width: 85%;
+      max-height: 75%;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(255, 51, 102, 0.3);
+      transform: scale(0.8);
+      opacity: 0;
+      filter: blur(0px);
+      transition: transform 1.5s ease-in-out, opacity 1.5s ease-in-out, filter 1.5s ease-in-out;
+    }
+
+    .image-container.active #displayImage {
+      transform: scale(1);
+      opacity: 1;
+      filter: blur(0px);
+    }
+
+    .image-container.fade-out #displayImage {
+      transform: scale(1.2);
+      opacity: 0;
+      filter: blur(5px);
+    }
+
+    .image-caption {
+      margin-top: 20px;
+      color: white;
+      font-size: 18px;
+      text-align: center;
+      max-width: 80%;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.8s ease 0.3s, transform 0.8s ease 0.3s;
+    }
+
+    .image-container.active .image-caption {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .image-container.fade-out .image-caption {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+  </style>
+
+  </body>
 </html>
